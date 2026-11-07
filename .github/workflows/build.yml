@@ -1,0 +1,25 @@
+name: Build Glyph Studio APK
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Build debug APK
+        run: |
+          if [ -f gradlew ]; then chmod +x gradlew; ./gradlew assembleDebug; else echo 'Android project files are missing'; exit 1; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GlyphStudio-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
