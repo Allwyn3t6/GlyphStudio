@@ -1,25 +1,80 @@
-name: Build Glyph Studio APK
+name: Glyph Studio Android APK
+
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
+
 permissions:
   contents: read
-  actions: read
+
 jobs:
   build:
+    name: Build debug APK
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
-      - name: Build debug APK
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android platform and build tools
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Download official Nothing Glyph SDK
+        shell: bash
         run: |
-          if [ -f gradlew ]; then chmod +x gradlew; ./gradlew assembleDebug; else echo 'Android project files are missing'; exit 1; fi
-      - uses: actions/upload-artifact@v4
+          mkdir -p app/libs
+          python3 - <<'PY'
+          import json
+          import pathlib
+          import urllib.request
+
+          api = "https://api.github.com/repos/Nothing-Developer-Programme/Glyph-Developer-Kit/contents/sdk"
+          request = urllib.request.Request(api, headers={
+              "Accept": "application/vnd.github+json",
+              "User-Agent": "GlyphStudio-GitHub-Actions"
+          })
+          with urllib.request.urlopen(request, timeout=45) as response:
+              entries = json.load(response)
+
+          candidates = [item for item in entries
+                        if item.get("type") == "file"
+                        and item.get("name", "").lower().endswith((".jar", ".aar"))]
+          if not candidates:
+              raise SystemExit("No JAR/AAR SDK binary found in the official Nothing Glyph-Developer-Kit/sdk folder.")
+
+          sdk = sorted(candidates, key=lambda item: item["name"])[-1]
+          download_url = sdk.get("download_url")
+          if not download_url:
+              raise SystemExit("The official SDK entry did not provide a download URL.")
+
+          destination = pathlib.Path("app/libs") / sdk["name"]
+          download_request = urllib.request.Request(download_url, headers={"User-Agent": "GlyphStudio-GitHub-Actions"})
+          with urllib.request.urlopen(download_request, timeout=90) as response, destination.open("wb") as output:
+              output.write(response.read())
+          print(f"Downloaded official SDK: {destination} ({destination.stat().st_size} bytes)")
+          PY
+
+      - name: Build debug APK
+        run: gradle --no-daemon :app:assembleDebug
+
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v4
         with:
           name: GlyphStudio-debug-apk
           path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
