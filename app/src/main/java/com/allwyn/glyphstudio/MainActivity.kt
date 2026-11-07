@@ -70,7 +70,7 @@ class MainActivity : Activity() {
                             }
                         } catch (e: Exception) {
                             sessionOpen = false
-                            status.text = "Glyph setup failed: \${e.message ?: "unknown error"}"
+                            status.text = "Glyph setup failed: ${e.message ?: "unknown error"}"
                         }
                     }
                 }
@@ -84,7 +84,7 @@ class MainActivity : Activity() {
             })
             managerInitialized = true
         } catch (e: Exception) {
-            status.text = "Unable to initialise Glyph SDK: \${e.message ?: "unknown error"}"
+            status.text = "Unable to initialise Glyph SDK: ${e.message ?: "unknown error"}"
         }
     }
 
@@ -122,7 +122,7 @@ class MainActivity : Activity() {
         val checks = ArrayList<CheckBox>()
         for (i in 0 until 24) {
             val cb = CheckBox(this).apply {
-                text = "C\${i + 1}"
+                text = "C${i + 1}"
                 textSize = 13f
                 setTextColor(0xFFFFFFFF.toInt())
                 buttonTintList = ColorStateList.valueOf(0xFFE5E5E5.toInt())
@@ -156,7 +156,7 @@ class MainActivity : Activity() {
         content.addView(actionButton("APPLY SELECTED ZONES") {
             stopAnimation()
             applyChannels(selected.indices.filter { selected[it] })
-            status.text = "Applied \${selected.count { it }} selected zones"
+            status.text = "Applied ${selected.count { it }} selected zones"
         })
         content.addView(actionButton("ALL ON") {
             stopAnimation()
@@ -257,7 +257,7 @@ class MainActivity : Activity() {
             channels.distinct().filter { it in 0..25 }.forEach { builder.buildChannel(it) }
             glyphManager.toggle(builder.build())
         } catch (e: Exception) {
-            toast("Glyph command failed: \${e.message ?: "unknown error"}")
+            toast("Glyph command failed: ${e.message ?: "unknown error"}")
         }
     }
 
