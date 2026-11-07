@@ -254,7 +254,15 @@ class MainActivity : Activity() {
             glyphManager.turnOff()
             if (channels.isEmpty()) return
             val builder = GlyphFrame.Builder(Glyph.DEVICE_23111)
-            channels.distinct().filter { it in 0..25 }.forEach { builder.buildChannel(it) }
+            // Phone (2a): C1-C24 use indexed channels; A and B use the
+            // dedicated SDK helpers documented by Nothing.
+            channels.distinct().filter { it in 0..25 }.forEach { channel ->
+                when (channel) {
+                    24 -> builder.buildChannelB()
+                    25 -> builder.buildChannelA()
+                    else -> builder.buildChannel(channel)
+                }
+            }
             glyphManager.toggle(builder.build())
         } catch (e: Exception) {
             toast("Glyph command failed: ${e.message ?: "unknown error"}")
